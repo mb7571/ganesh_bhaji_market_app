@@ -2,6 +2,15 @@ plugins {
     id 'com.android.application'
 }
 
+// On CI the signing keystore arrives as a base64 GitHub secret and is
+// decoded to keystore/ganesh-market.keystore before the build runs.
+def keystoreFile = rootProject.file('keystore/ganesh-market.keystore')
+if (!keystoreFile.exists() && System.getenv('KEYSTORE_BASE64')) {
+    keystoreFile.parentFile.mkdirs()
+    keystoreFile.bytes = Base64.getDecoder().decode(System.getenv('KEYSTORE_BASE64'))
+    println 'Decoded signing keystore from KEYSTORE_BASE64'
+}
+
 android {
     namespace 'in.ganeshmarket.app'
     compileSdk 34
@@ -14,6 +23,17 @@ android {
         versionName "1.0"
     }
 
+    signingConfigs {
+        release {
+            if (keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword System.getenv('KEYSTORE_PASSWORD') ?: 'ganesh-market-2026'
+                keyAlias System.getenv('KEYSTORE_ALIAS') ?: 'ganesh-market'
+                keyPassword System.getenv('KEYSTORE_PASSWORD') ?: 'ganesh-market-2026'
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -21,23 +41,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // Sign with our keystore when present (CI / release machine),
             // otherwise fall back to the debug key so the APK stays installable.
-            if (rootProject.file('keystore/ganesh-market.keystore').exists()) {
-                signingConfig signingConfigs.release
-            } else {
-                signingConfig signingConfigs.debug
-            }
-        }
-    }
-
-    signingConfigs {
-        release {
-            def ks = rootProject.file('keystore/ganesh-market.keystore')
-            if (ks.exists()) {
-                storeFile ks
-                storePassword 'ganesh-market-2026'
-                keyAlias 'ganesh-market'
-                keyPassword 'ganesh-market-2026'
-            }
+            signingConfig keystoreFile.exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
 
