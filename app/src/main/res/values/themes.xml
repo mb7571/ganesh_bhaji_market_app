@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.GaneshMarket" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/theme_green</item>
+        <item name="colorPrimaryDark">@color/theme_green_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:statusBarColor">@color/theme_green_dark</item>
+        <item name="android:windowBackground">@color/white</item>
+    </style>
+</resources>

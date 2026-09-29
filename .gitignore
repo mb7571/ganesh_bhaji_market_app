@@ -1,0 +1,20 @@
+# Built outputs
+build/
+app/build/
+apk-out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Local config
+local.properties
+
+# Keystore - keep the key private, but keep the scripts
+*.jks
+*.keystore
+
+# OS junk
+.DS_Store
+Thumbs.db

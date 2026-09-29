@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Ganesh Bhaji Market</string>
+    <string name="splash_tagline">Fresh vegetables, direct from the market</string>
+    <string name="offline_title">No Internet Connection</string>
+    <string name="offline_message">Please check your internet connection and try again.</string>
+    <string name="retry">Retry</string>
+    <string name="exit">Exit</string>
+</resources>

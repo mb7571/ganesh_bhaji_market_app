@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.GaneshMarket.Splash" parent="Theme.SplashScreen">
+        <item name="android:windowSplashScreenBackground">@color/theme_green</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/splash_logo</item>
+        <item name="android:windowSplashScreenAnimationDuration">400</item>
+        <item name="postSplashScreenTheme">@style/Theme.GaneshMarket</item>
+    </style>
+</resources>
