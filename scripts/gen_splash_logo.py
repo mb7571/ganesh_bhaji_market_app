@@ -1,9 +1,8 @@
-"""Generate splash-screen logo PNGs for all densities using Pillow.
+"""Generate splash-screen logo PNGs for all densities from the brand icon.
 
-Design: green rounded-square tile (matching the launcher icon) with a white
-circle "plate", green leaf, and a thin white ring so it reads as a logo on
-the light splash background. Also writes a centered wordmark below the logo
-by keeping the mark square; the wordmark text is part of the layout.
+Source artwork: gbm-icon.png at the repo root (512x512, full-bleed).
+Each density PNG is resized with Lanczos and given rounded corners so the
+logo reads as a rounded badge on the splash background.
 
 If Pillow is not installed, run:  pip install pillow
 """
@@ -11,7 +10,9 @@ import os
 
 from PIL import Image, ImageDraw
 
-RES = "app/src/main/res"
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+SRC_ICON = os.path.join(ROOT, "gbm-icon.png")
+RES = os.path.join(ROOT, "app", "src", "main", "res")
 
 # splash logo size (dp * density/48) — same scale as launcher icons
 SIZES = {
@@ -22,41 +23,30 @@ SIZES = {
     "xxxhdpi": 384,
 }
 
+# Corner radius as a fraction of logo size (matches the launcher icon)
+CORNER_RADIUS = 0.22
+
 
 def make_splash_logo(size: int) -> Image.Image:
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
+    src = Image.open(SRC_ICON).convert("RGBA")
+    img = src.resize((size, size), Image.LANCZOS)
 
-    green = (46, 125, 50, 255)      # #2E7D32
-    dark = (27, 94, 32, 255)        # #1B5E20
-    white = (255, 255, 255, 255)
-
-    # Rounded-square tile, like the launcher icon
-    d.rounded_rectangle([0, 0, size - 1, size - 1], radius=int(size * 0.22),
-                        fill=green)
-
-    # Thin white ring inside the tile for a "badge" look
-    ring_r = int(size * 0.44)
-    cx = cy = size // 2
-    d.ellipse([cx - ring_r, cy - ring_r, cx + ring_r, cy + ring_r],
-              outline=white, width=max(2, size // 24))
-
-    # White circle "plate"
-    r = int(size * 0.32)
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=white)
-
-    # Green leaf inside the plate
-    leaf_w, leaf_h = int(size * 0.32), int(size * 0.44)
-    lx, ly = cx - leaf_w // 2, cy - leaf_h // 2 - int(size * 0.02)
-    d.ellipse([lx, ly, lx + leaf_w, ly + leaf_h], fill=green)
-    # leaf stem
-    d.line([cx, cy - int(size * 0.05), cx, cy + int(size * 0.14)],
-           fill=dark, width=max(2, size // 28))
-
+    # Rounded-corner mask for a badge look on the splash background
+    mask = Image.new("L", (size, size), 0)
+    d = ImageDraw.Draw(mask)
+    d.rounded_rectangle([0, 0, size - 1, size - 1],
+                        radius=int(size * CORNER_RADIUS), fill=255)
+    img.putalpha(mask)
     return img
 
 
 def main():
+    if not os.path.exists(SRC_ICON):
+        raise SystemExit(f"Source icon not found: {SRC_ICON}")
+
+    src = Image.open(SRC_ICON)
+    print(f"source: {SRC_ICON} ({src.size[0]}x{src.size[1]})")
+
     for density, size in SIZES.items():
         folder = os.path.join(RES, f"mipmap-{density}")
         os.makedirs(folder, exist_ok=True)

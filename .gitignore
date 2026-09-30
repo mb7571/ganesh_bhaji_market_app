@@ -14,6 +14,8 @@ local.properties
 # Keystore - keep the key private, but keep the scripts
 *.jks
 *.keystore
+# Base64 copy of the signing key (CI uses the KEYSTORE_BASE64 secret instead)
+keystore/keystore-base64.txt
 
 # OS junk
 .DS_Store

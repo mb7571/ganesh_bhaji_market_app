@@ -1,5 +1,9 @@
 <resources>
     <color name="theme_green">#2E7D32</color>
+    <!-- Splash colors matching the gbm-icon.png teal-green gradient -->
+    <color name="splash_teal">#1AA194</color>
+    <color name="splash_gradient_start">#1AA194</color>
+    <color name="splash_gradient_end">#45AC68</color>
     <color name="theme_green_dark">#1B5E20</color>
     <color name="theme_green_light">#E8F5E9</color>
     <color name="white">#FFFFFF</color>

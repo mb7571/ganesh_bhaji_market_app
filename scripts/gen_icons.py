@@ -1,10 +1,12 @@
-"""Generate launcher icon PNGs for all densities using Pillow.
+"""Generate launcher icon PNGs for all densities from the brand icon.
+
+Source artwork: gbm-icon.png at the repo root (512x512, full-bleed).
+Each density PNG is resized with Lanczos and given rounded corners so it
+keeps the same rounded-tile launcher style as before.
 
 If Pillow is not installed, run:  pip install pillow
 """
 import os
-import struct
-import zlib
 
 try:
     from PIL import Image, ImageDraw
@@ -12,7 +14,9 @@ try:
 except ImportError:
     HAVE_PIL = False
 
-RES = "app/src/main/res"
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+SRC_ICON = os.path.join(ROOT, "gbm-icon.png")
+RES = os.path.join(ROOT, "app", "src", "main", "res")
 
 # density -> launcher icon size (dp * density/48)
 SIZES = {
@@ -23,69 +27,38 @@ SIZES = {
     "xxxhdpi": 192,
 }
 
+# Corner radius as a fraction of icon size (matches the previous style)
+CORNER_RADIUS = 0.22
 
-def make_icon_pil(size: int) -> "Image.Image":
-    """Green rounded-square with a leaf, like a fresh-vegetable market logo."""
-    from PIL import ImageDraw
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
 
-    # Rounded square background
-    d.rounded_rectangle([0, 0, size - 1, size - 1], radius=int(size * 0.22),
-                        fill=(46, 125, 50, 255))  # #2E7D32
+def make_icon(size: int) -> "Image.Image":
+    src = Image.open(SRC_ICON).convert("RGBA")
+    img = src.resize((size, size), Image.LANCZOS)
 
-    # White circle "plate" in the middle
-    cx, cy = size // 2, int(size * 0.56)
-    r = int(size * 0.30)
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 255, 255, 255))
-
-    # Green leaf inside the circle
-    leaf_w, leaf_h = int(size * 0.30), int(size * 0.42)
-    lx, ly = cx - leaf_w // 2, cy - leaf_h // 2
-    d.ellipse([lx, ly, lx + leaf_w, ly + leaf_h], fill=(46, 125, 50, 255))
-    # leaf stem
-    d.line([cx, cy + leaf_h // 2 - 2, cx, cy + leaf_h // 2 + int(size * 0.08)],
-           fill=(27, 94, 32, 255), width=max(2, size // 32))
-
+    # Rounded-corner mask for transparent corners
+    mask = Image.new("L", (size, size), 0)
+    d = ImageDraw.Draw(mask)
+    d.rounded_rectangle([0, 0, size - 1, size - 1],
+                        radius=int(size * CORNER_RADIUS), fill=255)
+    img.putalpha(mask)
     return img
 
 
-def crc32(data: bytes) -> int:
-    return zlib.crc32(data) & 0xFFFFFFFF
-
-
-def chunk(tag: bytes, data: bytes) -> bytes:
-    return (struct.pack(">I", len(data)) + tag + data
-            + struct.pack(">I", crc32(tag + data)))
-
-
-def write_png_fallback(size: int, path: str):
-    """Minimal solid green rounded-ish PNG without Pillow (crude fallback)."""
-    # Very simple: solid green square (no rounded corners) as fallback
-    raw = b""
-    row = b"\x00" + bytes([46, 125, 50, 255] * size)
-    raw = row * size
-    png = (b"\x89PNG\r\n\x1a\n"
-           + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
-           + chunk(b"IDAT", zlib.compress(raw))
-           + chunk(b"IEND", b""))
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "wb") as f:
-        f.write(png)
-
-
 def main():
+    if not HAVE_PIL:
+        raise SystemExit("Pillow is required:  pip install pillow")
+    if not os.path.exists(SRC_ICON):
+        raise SystemExit(f"Source icon not found: {SRC_ICON}")
+
+    src = Image.open(SRC_ICON)
+    print(f"source: {SRC_ICON} ({src.size[0]}x{src.size[1]})")
+
     for density, size in SIZES.items():
         folder = os.path.join(RES, f"mipmap-{density}")
         os.makedirs(folder, exist_ok=True)
         out = os.path.join(folder, "ic_launcher.png")
-        if HAVE_PIL:
-            img = make_icon_pil(size)
-            img.save(out, "PNG")
-            print(f"wrote {out} ({size}x{size})")
-        else:
-            write_png_fallback(size, out)
-            print(f"wrote {out} (fallback solid, {size}x{size})")
+        make_icon(size).save(out, "PNG")
+        print(f"wrote {out} ({size}x{size})")
 
 
 if __name__ == "__main__":
